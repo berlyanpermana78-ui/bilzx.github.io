@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS AI v2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══ RESET & ROOT ═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+:root {
+  --bg: #080808;
+  --surface: #0f0f0f;
+  --surface2: #161616;
+  --surface3: #1d1d1d;
+  --border: #252525;
+  --border2: #2f2f2f;
+  --text: #e8e8e8;
+  --text-muted: #5a5a5a;
+  --text-dim: #3a3a3a;
+  --accent: #ffffff;
+  --accent-inv: #000000;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --font: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --sidebar-w: 260px;
+  --radius: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.6);
+}
+
+body.light {
+  --bg: #f2f2f2;
+  --surface: #ffffff;
+  --surface2: #f8f8f8;
+  --surface3: #eeeeee;
+  --border: #dcdcdc;
+  --border2: #cccccc;
+  --text: #111111;
+  --text-muted: #888888;
+  --text-dim: #bbbbbb;
+  --accent: #000000;
+  --accent-inv: #ffffff;
+  --green: #16a34a;
+  --red: #dc2626;
+  --yellow: #d97706;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ═══ SCROLLBAR ══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ═══ SIDEBAR ════════════════════════════════════════════════════════════ */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s, opacity 0.2s;
+  overflow: hidden;
+}
+#sidebar.closed {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-header {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.logo-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+.logo-badge {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  border: 1px solid var(--border2);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+#btn-new-chat {
+  width: 100%;
+  padding: 9px 0;
+  background: var(--accent);
+  color: var(--accent-inv);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transition: opacity 0.15s;
+}
+#btn-new-chat:hover { opacity: 0.85; }
+
+.sidebar-section-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 10px 14px 6px;
+}
+
+#chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+  transition: background 0.1s, border-color 0.1s;
+  user-select: none;
+}
+.chat-item:hover { background: var(--surface2); }
+.chat-item.active {
+  background: var(--surface3);
+  border-color: var(--border);
+}
+.chat-item-dot {
+  font-size: 8px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.chat-item-title {
+  font-size: 11px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.chat-item.active .chat-item-title { color: var(--accent); }
+.chat-item-del {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 1px 4px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.chat-item:hover .chat-item-del { opacity: 1; }
+.chat-item-del:hover { color: var(--red); opacity: 1 !important; }
+
+.sidebar-footer {
+  padding: 10px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sf-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 11px;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  margin-bottom: 2px;
+}
+.sf-btn:hover {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text);
+}
+.sf-btn .icon { font-size: 13px; }
+.sidebar-version {
+  text-align: center;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══ MAIN AREA ══════════════════════════════════════════════════════════ */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ═══ HEADER ════════════════════════════════════════════════════════════ */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  min-height: 52px;
+}
+
+.hdr-logo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  display: none;
+}
+.sidebar-closed .hdr-logo { display: block; }
+
+.hdr-btn {
+  padding: 5px 8px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.hdr-btn:hover { background: var(--surface2); border-color: var(--border2); }
+.hdr-btn.active {
+  background: var(--accent);
+  color: var(--accent-inv);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+select.hdr-select {
+  padding: 5px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.12s;
+  max-width: 180px;
+}
+select.hdr-select:hover { border-color: var(--border2); }
+select.hdr-select option { background: var(--surface); color: var(--text); }
+
+.hdr-spacer { flex: 1; }
+
+.key-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.key-indicator.ok { background: var(--green); }
+
+.hdr-btn.key-btn { font-size: 11px; padding: 5px 10px; }
+.hdr-btn.key-btn.ok { color: var(--green); border-color: var(--green); }
+.hdr-btn.key-btn.err { color: var(--red); border-color: var(--red); }
+
+/* ═══ SEARCH BAR ═════════════════════════════════════════════════════════ */
+#search-bar {
+  display: none;
+  padding: 7px 14px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+#search-bar.visible { display: flex; }
+#search-input {
+  flex: 1;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 12px;
+  outline: none;
+}
+#search-input:focus { border-color: var(--border2); }
+#search-count { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+/* ═══ MESSAGES ═══════════════════════════════════════════════════════════ */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Welcome screen */
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: 40px 20px;
+  min-height: 50vh;
+}
+.welcome-logo { font-size: 40px; opacity: 0.1; margin-bottom: 12px; letter-spacing: -2px; }
+.welcome-title { font-size: 16px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 4px; }
+.welcome-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.welcome-model { font-size: 10px; color: var(--text-dim); margin-bottom: 28px; }
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  width: 100%;
+}
+.quick-card {
+  padding: 11px 13px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  user-select: none;
+}
+.quick-card:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+.quick-card-cmd { font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.quick-card-desc { font-size: 10px; color: var(--text-muted); }
+
+/* Message wrapper */
+.msg-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: fadeUp 0.2s ease;
+}
+.msg-wrap.user { flex-direction: row-reverse; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.msg-avatar.user {
+  background: var(--accent);
+  color: var(--accent-inv);
+  border-color: var(--accent);
+}
+.msg-avatar.ai {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.msg-bubble {
+  max-width: 78%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 13px;
+  font-size: 13px;
+  line-height: 1.65;
+  word-break: break-word;
+  position: relative;
+}
+.msg-wrap.user .msg-bubble {
+  background: var(--surface2);
+}
+
+.msg-tag {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.msg-tag.web { color: var(--green); }
+.msg-tag.err { color: var(--red); }
+.msg-tag.special { color: var(--yellow); }
+
+.msg-content { white-space: pre-wrap; }
+.msg-content p { margin: 2px 0; }
+
+.msg-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  gap: 8px;
+}
+.msg-meta { font-size: 9px; color: var(--text-dim); letter-spacing: 0.05em; }
+.msg-actions { display: flex; gap: 3px; }
+.msg-act-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: background 0.1s, color 0.1s;
+  font-family: var(--font);
+}
+.msg-act-btn:hover { background: var(--surface3); color: var(--text); }
+
+/* ═══ MARKDOWN STYLES ════════════════════════════════════════════════════ */
+.md h1 { font-size: 18px; font-weight: 700; color: var(--accent); margin: 14px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.md h2 { font-size: 15px; font-weight: 700; color: var(--accent); margin: 12px 0 6px; }
+.md h3 { font-size: 13px; font-weight: 700; color: var(--accent); margin: 10px 0 4px; letter-spacing: 0.04em; }
+.md p { margin: 3px 0; line-height: 1.65; }
+.md strong { font-weight: 700; color: var(--accent); }
+.md em { font-style: italic; opacity: 0.85; }
+.md a { color: var(--text-muted); text-decoration: underline; }
+.md a:hover { color: var(--text); }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+.md ul, .md ol { padding-left: 0; margin: 4px 0; }
+.md li {
+  display: flex;
+  gap: 8px;
+  margin: 2px 0;
+  align-items: flex-start;
+  padding-left: 4px;
+}
+.md li .bullet { color: var(--text-muted); flex-shrink: 0; }
+.md blockquote {
+  border-left: 3px solid var(--border2);
+  padding-left: 10px;
+  margin: 6px 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.md .inline-code {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font);
+}
+.md .code-block-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.md .code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+.md pre {
+  background: var(--surface3);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  font-family: var(--font);
+}
+.md pre code { font-family: inherit; }
+.md .copy-code-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  transition: all 0.12s;
+}
+.md .copy-code-btn:hover { background: var(--surface2); color: var(--text-muted); }
+.md .copy-code-btn.copied { color: var(--green); border-color: var(--green); }
+.md table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 12px; }
+.md th { background: var(--surface3); border: 1px solid var(--border); padding: 5px 10px; text-align: left; color: var(--text); font-weight: 700; }
+.md td { border: 1px solid var(--border); padding: 5px 10px; color: var(--text-muted); }
+.md tr:hover td { background: var(--surface2); }
+
+/* ═══ TYPING INDICATOR ══════════════════════════════════════════════════ */
+#typing-indicator {
+  display: none;
+  gap: 10px;
+  align-items: flex-start;
+}
+#typing-indicator.visible { display: flex; }
+.typing-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.dot-anim {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+.dot-anim:nth-child(2) { animation-delay: 0.2s; }
+.dot-anim:nth-child(3) { animation-delay: 0.4s; }
+.typing-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-left: 4px;
+}
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ═══ INPUT AREA ════════════════════════════════════════════════════════ */
+#input-area {
+  padding: 10px 14px 13px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.input-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+.input-meta .web-on { color: var(--green); font-weight: 700; }
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+#user-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  min-height: 72px;
+  max-height: 220px;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+}
+#user-input:focus { border-color: var(--border2); }
+#user-input::placeholder { color: var(--text-dim); font-size: 12px; }
+#send-btn {
+  width: 58px;
+  height: 72px;
+  background: var(--accent);
+  color: var(--accent-inv);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 16px;
+  transition: opacity 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+#send-btn:disabled {
+  background: var(--surface3);
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
+#send-btn:not(:disabled):hover { opacity: 0.85; }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--text-dim);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══ MODAL ══════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease;
+}
+.modal-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 22px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  animation: slideUp 0.2s ease;
+}
+.modal-box.wide { max-width: 620px; }
+.modal-box.narrow { max-width: 440px; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.modal-close:hover { color: var(--text); background: var(--surface2); }
+
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 11px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-textarea:focus { border-color: var(--border2); }
+.form-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+.form-row { display: flex; gap: 8px; align-items: center; }
+.form-row .form-input { flex: 1; }
+.form-note { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.form-note a { color: var(--text-muted); }
+.form-note a:hover { color: var(--text); }
+
+.range-wrap { position: relative; }
+input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.modal-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  color: var(--accent-inv);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.modal-btn:hover { opacity: 0.85; }
+.modal-btn.secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.info-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 10px 0;
+  line-height: 1.6;
+}
+.info-box strong { color: var(--text); }
+
+/* help styles */
+.help-content { font-size: 12px; line-height: 1.8; }
+.help-content .cmd { color: var(--accent); font-weight: 700; }
+.help-content table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+.help-content th { background: var(--surface3); border: 1px solid var(--border); padding: 5px 10px; text-align: left; font-size: 11px; }
+.help-content td { border: 1px solid var(--border); padding: 5px 10px; color: var(--text-muted); font-size: 11px; }
+.help-content h3 { color: var(--accent); margin: 14px 0 6px; font-size: 12px; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+
+/* toast */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  z-index: 9999;
+  animation: toastIn 0.2s ease;
+  box-shadow: var(--shadow);
+  display: none;
+}
+#toast.show { display: block; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* feature status bar */
+#status-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 4px 14px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.sb-item { display: flex; align-items: center; gap: 4px; }
+.sb-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); }
+.sb-dot.on { background: var(--green); }
+.sb-sep { color: var(--text-dim); opacity: 0.3; }
+
+/* responsive */
+@media (max-width: 600px) {
+  :root { --sidebar-w: 220px; }
+  .quick-grid { grid-template-columns: 1fr; }
+  .msg-bubble { max-width: 90%; }
+}
+</style>
+</head>
+<body>
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="logo-text">◈ NEXUS AI</span>
+      <span class="logo-badge">v2.0</span>
+    </div>
+    <button id="btn-new-chat">＋ CHAT BARU</button>
+  </div>
+  <div class="sidebar-section-label">Riwayat Chat</div>
+  <div id="chat-list"></div>
+  <div class="sidebar-footer">
+    <button class="sf-btn" onclick="openModal('settings')"><span class="icon">⚙️</span>Pengaturan AI</button>
+    <button class="sf-btn" onclick="openModal('api')"><span class="icon">🔑</span>API Keys</button>
+    <button class="sf-btn" onclick="openModal('help')"><span class="icon">❓</span>Bantuan & Perintah</button>
+    <button class="sf-btn" onclick="toggleTheme()"><span class="icon" id="theme-icon">☀️</span><span id="theme-label">Mode Terang</span></button>
+    <div class="sidebar-version">NEXUS AI v2.0 &nbsp;·&nbsp; 2026<br>Gemini &amp; Groq Powered</div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main id="main">
+  <!-- Header -->
+  <div id="header">
+    <button class="hdr-btn" id="toggle-sidebar-btn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
+    <span class="hdr-logo">◈ NEXUS</span>
+
+    <select class="hdr-select" id="provider-select" onchange="onProviderChange(this.value)">
+      <option value="groq">⚡ Groq</option>
+      <option value="gemini">◈ Gemini</option>
+    </select>
+
+    <select class="hdr-select" id="model-select" onchange="onModelChange(this.value)" style="max-width:200px"></select>
+
+    <button class="hdr-btn" id="web-btn" onclick="toggleWeb()" title="Toggle Web Search">🌐 WEB</button>
+    <button class="hdr-btn" id="search-btn" onclick="toggleSearch()" title="Cari dalam chat">🔍</button>
+
+    <div class="hdr-spacer"></div>
+
+    <div class="key-indicator" id="key-dot" title="Status API Key"></div>
+    <button class="hdr-btn key-btn" id="key-btn" onclick="openModal('api')">🔑 KEY</button>
+    <button class="hdr-btn" onclick="exportChat()" title="Export chat">📤</button>
+    <button class="hdr-btn" onclick="clearChat()" title="Hapus semua pesan">🗑️</button>
+  </div>
+
+  <!-- Status Bar -->
+  <div id="status-bar">
+    <div class="sb-item"><div class="sb-dot" id="sb-api"></div><span id="sb-api-txt">API: —</span></div>
+    <span class="sb-sep">|</span>
+    <div class="sb-item"><div class="sb-dot" id="sb-web"></div><span>WEB</span></div>
+    <span class="sb-sep">|</span>
+    <div class="sb-item"><span id="sb-model-txt">Model: —</span></div>
+    <span class="sb-sep">|</span>
+    <div class="sb-item"><span id="sb-msgs-txt">0 pesan</span></div>
+  </div>
+
+  <!-- Search bar -->
+  <div id="search-bar">
+    <input id="search-input" type="text" placeholder="Cari pesan..." oninput="doSearch(this.value)">
+    <span id="search-count"></span>
+    <button class="hdr-btn" onclick="closeSearch()">✕</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages">
+    <div id="welcome"></div>
+  </div>
+
+  <!-- Typing indicator -->
+  <div id="typing-indicator">
+    <div class="msg-avatar ai">◈</div>
+    <div class="typing-bubble">
+      <div class="dot-anim"></div>
+      <div class="dot-anim"></div>
+      <div class="dot-anim"></div>
+      <span class="typing-label" id="typing-label">PROCESSING...</span>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div id="input-area">
+    <div class="input-meta">
+      <span id="char-count">0 karakter</span>
+      <span>
+        <span id="web-indicator" style="display:none" class="web-on">🌐 WEB AKTIF &nbsp;·&nbsp;</span>
+        Shift+Enter = baris baru &nbsp;·&nbsp; Enter = kirim
+      </span>
+    </div>
+    <div class="input-row">
+      <textarea id="user-input" rows="3"
+        placeholder="Ketik pesan... coba: .tt [tiktok-url] · .music [lagu] · .weather [kota] · .calc [rumus] · .help"
+        oninput="onInputChange()" onkeydown="onInputKeydown(event)"></textarea>
+      <button id="send-btn" onclick="sendMessage()" disabled>▶</button>
+    </div>
+  </div>
+</main>
+
+<!-- ═══ MODAL: API KEYS ═══ -->
+<div class="modal-overlay hidden" id="modal-api" onclick="handleOverlayClick(event,'api')">
+  <div class="modal-box narrow">
+    <div class="modal-head">
+      <span class="modal-title">🔑 Pengaturan API Key</span>
+      <button class="modal-close" onclick="closeModal('api')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Google Gemini API Key</label>
+      <div class="form-row">
+        <input class="form-input" type="password" id="key-gemini" placeholder="AIza...">
+        <button class="hdr-btn" onclick="toggleShow('key-gemini',this)">👁</button>
+      </div>
+      <p class="form-note">→ <a href="https://aistudio.google.com/app/apikey" target="_blank">Dapatkan Gemini API Key</a> (gratis)</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Groq API Key</label>
+      <div class="form-row">
+        <input class="form-input" type="password" id="key-groq" placeholder="gsk_...">
+        <button class="hdr-btn" onclick="toggleShow('key-groq',this)">👁</button>
+      </div>
+      <p class="form-note">→ <a href="https://console.groq.com/keys" target="_blank">Dapatkan Groq API Key</a> (GRATIS!)</p>
+    </div>
+    <div class="info-box">
+      🔒 API key disimpan di <strong>localStorage browser kamu</strong> saja — tidak dikirim ke server manapun.
+    </div>
+    <button class="modal-btn" onclick="saveApiKeys()">SIMPAN API KEY</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: SETTINGS ═══ -->
+<div class="modal-overlay hidden" id="modal-settings" onclick="handleOverlayClick(event,'settings')">
+  <div class="modal-box narrow">
+    <div class="modal-head">
+      <span class="modal-title">⚙️ Pengaturan AI</span>
+      <button class="modal-close" onclick="closeModal('settings')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">System Prompt</label>
+      <textarea class="form-textarea" id="sys-prompt" style="min-height:110px"></textarea>
+      <p class="form-note">Instruksi dasar kepribadian dan gaya AI.</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Temperature: <span id="temp-val">0.7</span></label>
+      <div class="range-wrap">
+        <input type="range" min="0" max="2" step="0.1" id="temp-range" oninput="updateTempLabel(this.value)">
+        <div class="range-labels"><span>0.0 Presisi</span><span>0.7 Seimbang</span><span>2.0 Kreatif</span></div>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>Provider:</strong> <span id="info-provider">—</span><br>
+      <strong>Model:</strong> <span id="info-model">—</span><br>
+      <strong>Versi:</strong> NEXUS AI v2.0
+    </div>
+    <button class="modal-btn" onclick="saveSettings()">SIMPAN PENGATURAN</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: HELP ═══ -->
+<div class="modal-overlay hidden" id="modal-help" onclick="handleOverlayClick(event,'help')">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <span class="modal-title">❓ Bantuan &amp; Semua Fitur</span>
+      <button class="modal-close" onclick="closeModal('help')">✕</button>
+    </div>
+    <div class="help-content" id="help-content"></div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════════════════════
+   NEXUS AI v2.0 — Complete AI Chat App
+   Features: Gemini API, Groq API, TikTok DL, iTunes Search,
+             Weather, Calculator, Web Search, Export, and more
+═══════════════════════════════════════════════════════════════════════ */
+
+const VERSION = '2.0';
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const PROVIDERS = {
+  gemini: {
+    name: 'Google Gemini',
+    models: [
+      { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash ✦' },
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+      { id: 'gemini-2.0-flash-thinking-exp', name: 'Gemini 2.0 Thinking' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+    ]
+  },
+  groq: {
+    name: 'Groq',
+    models: [
+      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B ✦' },
+      { id: 'llama-3.1-70b-versatile', name: 'Llama 3.1 70B' },
+      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B ⚡' },
+      { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' },
+      { id: 'gemma2-9b-it', name: 'Gemma2 9B' },
+      { id: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 70B' },
+      { id: 'compound-beta', name: 'Compound Beta 🌐 Web' },
+    ]
+  }
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = {
+  chats: [],
+  currentChatId: null,
+  provider: 'groq',
+  model: 'llama-3.3-70b-versatile',
+  apiKeys: { gemini: '', groq: '' },
+  webOn: false,
+  sidebarOpen: true,
+  theme: 'dark',
+  sysPrompt: 'Kamu adalah asisten AI yang sangat membantu, cerdas, dan ramah. Jawab dalam Bahasa Indonesia kecuali diminta berbahasa lain.',
+  temperature: 0.7,
+  loading: false
+};
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+const genId = () => Math.random().toString(36).slice(2, 10);
+const nowTs = () => Date.now();
+const fmtTime = ts => new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+const fmtDate = ts => new Date(ts).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function save() {
+  try {
+    localStorage.setItem('nexus_state', JSON.stringify({
+      chats: state.chats,
+      currentChatId: state.currentChatId,
+      provider: state.provider,
+      model: state.model,
+      apiKeys: state.apiKeys,
+      theme: state.theme,
+      sysPrompt: state.sysPrompt,
+      temperature: state.temperature
+    }));
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('nexus_state');
+    if (d) {
+      const p = JSON.parse(d);
+      Object.assign(state, p);
+    }
+  } catch(e) {}
+  if (!state.chats.length) {
+    const c = { id: genId(), title: 'Chat Baru', messages: [], createdAt: nowTs() };
+    state.chats = [c];
+    state.currentChatId = c.id;
+  } else if (!state.currentChatId) {
+    state.currentChatId = state.chats[0].id;
+  }
+}
+
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Markdown Parser ───────────────────────────────────────────────────────────
+function parseMarkdown(text) {
+  const lines = text.split('\n');
+  let html = '';
+  let i = 0;
+
+  function inlineParse(line) {
+    // Links
+    line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // Bold
+    line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic
+    line = line.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Inline code
+    line = line.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
+    return line;
+  }
+
+  while (i < lines.length) {
+    let ln = lines[i];
+
+    // Code block
+    if (ln.startsWith('```')) {
+      const lang = esc(ln.slice(3).trim()) || 'code';
+      let code = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        code.push(esc(lines[i]));
+        i++;
+      }
+      const id = 'cb_' + genId();
+      html += `<div class="code-block-wrap">
+        <div class="code-header">
+          <span>${lang.toUpperCase()}</span>
+          <button class="copy-code-btn" id="${id}" onclick="copyCode('${id}','${btoa(encodeURIComponent(code.join('\n')))}')">📋 Copy</button>
+        </div>
+        <pre><code>${code.join('\n')}</code></pre>
+      </div>`;
+      i++;
+      continue;
+    }
+
+    // HR
+    if (/^-{3,}$/.test(ln.trim()) || /^\*{3,}$/.test(ln.trim())) {
+      html += '<hr>';
+      i++; continue;
+    }
+
+    // Headers
+    if (ln.startsWith('### ')) { html += `<h3>${inlineParse(esc(ln.slice(4)))}</h3>`; i++; continue; }
+    if (ln.startsWith('## ')) { html += `<h2>${inlineParse(esc(ln.slice(3)))}</h2>`; i++; continue; }
+    if (ln.startsWith('# ')) { html += `<h1>${inlineParse(esc(ln.slice(2)))}</h1>`; i++; continue; }
+
+    // Blockquote
+    if (ln.startsWith('> ')) {
+      html += `<blockquote>${inlineParse(esc(ln.slice(2)))}</blockquote>`;
+      i++; continue;
+    }
+
+    // Unordered list
+    if (ln.startsWith('- ') || ln.startsWith('* ')) {
+      html += `<ul><li><span class="bullet">▸</span><span>${inlineParse(esc(ln.slice(2)))}</span></li></ul>`;
+      i++; continue;
+    }
+
+    // Ordered list
+    const olm = ln.match(/^(\d+)\. (.+)/);
+    if (olm) {
+      html += `<ol><li><span class="bullet">${olm[1]}.</span><span>${inlineParse(esc(olm[2]))}</span></li></ol>`;
+      i++; continue;
+    }
+
+    // Table row
+    if (ln.startsWith('|') && ln.endsWith('|')) {
+      const cells = ln.split('|').filter((c,j,a) => j > 0 && j < a.length - 1);
+      const next = lines[i+1] || '';
+      const isHeader = next.startsWith('|') && /[-:|]/.test(next);
+      if (isHeader) {
+        html += '<table><tr>' + cells.map(c => `<th>${inlineParse(esc(c.trim()))}</th>`).join('') + '</tr>';
+        i += 2;
+        while (i < lines.length && lines[i].startsWith('|')) {
+          const rc = lines[i].split('|').filter((c,j,a) => j > 0 && j < a.length - 1);
+          html += '<tr>' + rc.map(c => `<td>${inlineParse(esc(c.trim()))}</td>`).join('') + '</tr>';
+          i++;
+        }
+        html += '</table>';
+        continue;
+      } else {
+        html += '<table><tr>' + cells.map(c => `<td>${inlineParse(esc(c.trim()))}</td>`).join('') + '</tr></table>';
+        i++; continue;
+      }
+    }
+
+    // Empty line
+    if (ln.trim() === '') { html += '<div style="height:6px"></div>'; i++; continue; }
+
+    // Paragraph
+    html += `<p>${inlineParse(esc(ln))}</p>`;
+    i++;
+  }
+  return html;
+}
+
+function copyCode(id, encoded) {
+  const text = decodeURIComponent(atob(encoded));
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.textContent = '✓ Copied'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 1500); }
+  }).catch(() => showToast('Gagal salin'));
+}
+
+// ── Special Commands ──────────────────────────────────────────────────────────
+async function runCommand(text) {
+  const t = text.trim();
+
+  // TikTok download
+  if (t.startsWith('.tt ') || t.startsWith('.tiktok ')) {
+    const url = t.replace(/^\.(tt|tiktok)\s+/, '').trim();
+    return await cmdTikTok(url);
+  }
+
+  // Music search
+  if (t.startsWith('.music ') || t.startsWith('.lagu ') || t.startsWith('.song ')) {
+    const q = t.replace(/^\.(music|lagu|song)\s+/, '');
+    return await cmdMusic(q);
+  }
+
+  // YouTube search
+  if (t.startsWith('.yt ') || t.startsWith('.youtube ')) {
+    const q = t.replace(/^\.(yt|youtube)\s+/, '');
+    return await cmdYT(q);
+  }
+
+  // Weather
+  if (t.startsWith('.weather ') || t.startsWith('.cuaca ') || t.startsWith('.w ')) {
+    const city = t.replace(/^\.(weather|cuaca|w)\s+/, '');
+    return await cmdWeather(city);
+  }
+
+  // Calculator
+  if (t.startsWith('.calc ') || t.startsWith('.hitung ') || t.startsWith('.math ')) {
+    const expr = t.replace(/^\.(calc|hitung|math)\s+/, '');
+    return cmdCalc(expr);
+  }
+
+  // Export
+  if (t === '.export' || t === '.ekspor') return cmdExport();
+
+  // Clear
+  if (t === '.clear' || t === '.hapus') { clearChat(); return '🗑️ Chat berhasil dihapus!'; }
+
+  // New chat
+  if (t === '.new' || t === '.baru') { createNewChat(); return '✅ Chat baru dibuat!'; }
+
+  // Help
+  if (t === '.help' || t === '.bantuan' || t === '/?') return getHelpText();
+
+  // Version
+  if (t === '.version' || t === '.ver' || t === '.v') {
+    return `## ◈ NEXUS AI v${VERSION}\n\nProvider: **${PROVIDERS[state.provider].name}**\nModel: **${state.model}**\nBuild: **2026**\n\nFitur: TikTok DL · iTunes Search · Weather · Calculator · Web Search · Export · dan 20+ lainnya`;
+  }
+
+  return null;
+}
+
+async function cmdTikTok(url) {
+  if (!url || !url.includes('tiktok')) return '❌ URL TikTok tidak valid.\nContoh: `.tt https://www.tiktok.com/@user/video/123456789`';
+  try {
+    const apiUrl = `https://tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data.code === 0 && data.data) {
+      const v = data.data;
+      const a = v.author || {};
+      const dur = v.duration ? `${Math.floor(v.duration/60)}:${String(v.duration%60).padStart(2,'0')}` : 'N/A';
+      return `## 📱 TikTok Downloader — No Watermark
+
+**Judul:** ${v.title || 'Tidak ada judul'}
+**Oleh:** @${a.unique_id || '?'} (${a.nickname || ''})
+
+| Statistik | Nilai |
+|-----------|-------|
+| ❤️ Likes | ${Number(v.digg_count||0).toLocaleString('id')} |
+| 👁️ Views | ${Number(v.play_count||0).toLocaleString('id')} |
+| 💬 Komentar | ${Number(v.comment_count||0).toLocaleString('id')} |
+| 🔗 Share | ${Number(v.share_count||0).toLocaleString('id')} |
+| ⏱️ Durasi | ${dur} |
+
+---
+
+**🎬 Link Download:**
+
+**[📥 Download HD (No Watermark)](${v.hdplay || v.play})**
+
+[📥 Download SD (No Watermark)](${v.play})
+
+[📷 Download Thumbnail](${v.cover})
+
+> Powered by TikWM API · Klik link untuk mulai download`;
+    }
+    return `❌ Gagal mengambil video.\nError: ${data.msg || 'Unknown'}\n\nPastikan link TikTok benar dan coba lagi.`;
+  } catch(e) {
+    return `❌ Error: ${e.message}\n\nContoh penggunaan:\n\`.tt https://www.tiktok.com/@user/video/1234567890\``;
+  }
+}
+
+async function cmdMusic(query) {
+  if (!query.trim()) return '❌ Masukkan nama lagu.\nContoh: `.music shape of you`';
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=6&country=ID`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.results?.length) return `❌ Lagu **"${query}"** tidak ditemukan di iTunes.`;
+    let out = `## 🎵 Hasil Pencarian Musik: "${query}"\n\n`;
+    data.results.forEach((t, i) => {
+      const dur = t.trackTimeMillis ? `${Math.floor(t.trackTimeMillis/60000)}:${String(Math.floor((t.trackTimeMillis%60000)/1000)).padStart(2,'0')}` : 'N/A';
+      out += `### ${i+1}. ${t.trackName || 'Unknown'}\n`;
+      out += `**Artis:** ${t.artistName || 'N/A'} &nbsp;|&nbsp; **Album:** ${t.collectionName || 'N/A'}\n`;
+      out += `**Genre:** ${t.primaryGenreName || 'N/A'} &nbsp;|&nbsp; **Durasi:** ${dur} &nbsp;|&nbsp; **Tahun:** ${t.releaseDate?.slice(0,4) || '?'}\n`;
+      if (t.previewUrl) out += `**[▶️ Preview 30 Detik](${t.previewUrl})**\n`;
+      out += `\n`;
+    });
+    return out + `> 🍎 Data dari iTunes Search API`;
+  } catch(e) {
+    return `❌ Error music search: ${e.message}`;
+  }
+}
+
+async function cmdYT(query) {
+  if (!query.trim()) return '❌ Masukkan query YouTube.';
+  try {
+    const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=musicVideo&limit=4`);
+    const d = await r.json();
+    let out = `## 🎬 Music Video: "${query}"\n\n`;
+    if (d.results?.length) {
+      d.results.forEach((v, i) => {
+        out += `**${i+1}. ${v.trackName || '?'}** — ${v.artistName || '?'} (${v.releaseDate?.slice(0,4)||'?'})\n`;
+      });
+      out += `\n`;
+    }
+    out += `[🔴 Cari di YouTube](https://www.youtube.com/results?search_query=${encodeURIComponent(query)})`;
+    return out;
+  } catch(e) {
+    return `❌ Error: ${e.message}\n\n[🔴 Cari di YouTube](https://www.youtube.com/results?search_query=${encodeURIComponent(query)})`;
+  }
+}
+
+async function cmdWeather(city) {
+  if (!city.trim()) return '❌ Masukkan nama kota.\nContoh: `.weather jakarta`';
+  try {
+    const res = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    const c = d.current_condition?.[0];
+    const a = d.nearest_area?.[0];
+    if (!c) return `❌ Data cuaca untuk "${city}" tidak tersedia.`;
+    const aName = a?.areaName?.[0]?.value || city;
+    const country = a?.country?.[0]?.value || '';
+    const desc = c.weatherDesc?.[0]?.value || 'N/A';
+    const forecasts = d.weather?.slice(0,3) || [];
+    let out = `## 🌤️ Cuaca: ${aName}${country ? ', '+country : ''}
+
+| Kondisi | Nilai |
+|---------|-------|
+| Status | ${desc} |
+| 🌡️ Suhu | ${c.temp_C}°C (terasa ${c.FeelsLikeC}°C) |
+| 💧 Kelembaban | ${c.humidity}% |
+| 💨 Angin | ${c.windspeedKmph} km/h (${c.winddir16Point}) |
+| 👁️ Visibilitas | ${c.visibility} km |
+| ☁️ Tutupan Awan | ${c.cloudcover}% |
+| ☔ Curah Hujan | ${c.precipMM} mm |
+
+`;
+    if (forecasts.length) {
+      out += `### 📅 Prakiraan 3 Hari\n\n`;
+      forecasts.forEach(day => {
+        const fx = day.hourly?.[4]?.weatherDesc?.[0]?.value || '';
+        out += `**${day.date}** — ☀️ Max: ${day.maxtempC}°C · 🌙 Min: ${day.mintempC}°C${fx ? ' · '+fx : ''}\n`;
+      });
+    }
+    return out + `\n> Data dari wttr.in`;
+  } catch(e) {
+    return `❌ Error cuaca: ${e.message}\n\nContoh: \`.weather jakarta\` · \`.weather tokyo\` · \`.weather london\``;
+  }
+}
+
+function cmdCalc(expr) {
+  if (!expr.trim()) return '❌ Masukkan ekspresi.\nContoh: `.calc (15 * 8) + 3`';
+  try {
+    const safe = expr.replace(/[^0-9+\-*/().%\s]/g, '');
+    if (!safe.trim()) return '❌ Ekspresi mengandung karakter tidak valid.';
+    // eslint-disable-next-line no-new-func
+    const result = new Function('"use strict"; return (' + safe + ')')();
+    if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) throw new Error('Hasil tidak valid');
+    return `## 🧮 Kalkulator
+
+**Input:** \`${expr}\`
+**Hasil:** \`${result.toLocaleString('id-ID')}\`
+
+> Mendukung: + − * / % () · Contoh: \`.calc (100/4)*3 + 2**8\``;
+  } catch(e) {
+    return `❌ Ekspresi tidak valid: ${e.message}\n\nContoh:\n- \`.calc 25 * 4 + 10\`\n- \`.calc (100 / 4) * 3\`\n- \`.calc 2 ** 10\``;
+  }
+}
+
+function cmdExport() {
+  const chat = getChat();
+  if (!chat?.messages.length) return '❌ Tidak ada pesan untuk diekspor.';
+  const txt = `NEXUS AI v${VERSION} — Export Chat
+${'='.repeat(52)}
+Judul   : ${chat.title}
+Tanggal : ${fmtDate(chat.createdAt)}
+Pesan   : ${chat.messages.length}
+Provider: ${PROVIDERS[state.provider].name}
+Model   : ${state.model}
+${'='.repeat(52)}
+
+` + chat.messages.map(m =>
+    `[${m.role === 'user' ? 'KAMU' : 'AI  '}] ${fmtDate(m.timestamp)} ${fmtTime(m.timestamp)}\n${m.content}\n`
+  ).join('\n' + '-'.repeat(52) + '\n\n');
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `nexus-chat-${chat.id.slice(0,8)}-${Date.now()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return `✅ Chat berhasil diekspor!\n\nFile: \`nexus-chat-${chat.id.slice(0,8)}.txt\``;
+}
+
+function getHelpText() {
+  return `## 📖 NEXUS AI — Semua Fitur & Perintah
+
+### 🤖 AI Chat
+Ketik pesan biasa untuk chat. Aktifkan tombol **🌐 WEB** untuk real-time search.
+
+### 📱 TikTok Downloader
+\`.tt [url]\` — Download video TikTok tanpa watermark (HD + SD)
+\`.tiktok [url]\` — Sama dengan .tt
+
+### 🎵 Pencarian Musik iTunes
+\`.music [judul lagu]\` — Cari lagu beserta preview
+\`.lagu [judul lagu]\` — Versi Indonesia
+\`.song [title]\` — Versi Inggris
+
+### 🎬 YouTube / Video
+\`.yt [query]\` — Cari music video & link YouTube
+\`.youtube [query]\` — Sama dengan .yt
+
+### 🌤️ Cuaca Real-Time
+\`.weather [kota]\` — Cuaca + prakiraan 3 hari
+\`.cuaca [kota]\` — Versi Indonesia
+Contoh: \`.weather jakarta\` · \`.cuaca bandung\`
+
+### 🧮 Kalkulator
+\`.calc [ekspresi]\` — Hitung matematika apapun
+\`.hitung [ekspresi]\` — Versi Indonesia
+Contoh: \`.calc (100/4)*3 + 2**8\`
+
+### 📤 Export & Manajemen
+\`.export\` — Ekspor chat aktif ke file .txt
+\`.ekspor\` — Versi Indonesia
+\`.clear\` — Hapus semua pesan chat aktif
+\`.hapus\` — Versi Indonesia
+\`.new\` — Buat chat baru
+\`.baru\` — Versi Indonesia
+\`.version\` — Info versi & status
+
+### ❓ Bantuan
+\`.help\` — Tampilkan bantuan ini
+\`.bantuan\` — Versi Indonesia
+\`/?\` — Shortcut bantuan
+
+---
+
+### ⌨️ Keyboard Shortcuts
+- **Enter** = Kirim pesan
+- **Shift+Enter** = Baris baru dalam pesan
+- **Ctrl/Cmd+K** = Buka pencarian chat
+
+---
+
+### 🔧 Fitur UI
+- **Sidebar** — Buka/tutup, riwayat semua chat
+- **WEB Toggle** — Aktifkan web search real-time
+- **Model Switcher** — Ganti model AI kapan saja
+- **🔍 Search** — Cari pesan dalam chat aktif
+- **📤 Export** — Ekspor chat ke .txt
+- **🗑️ Clear** — Hapus pesan chat aktif
+- **Pengaturan** — System prompt & temperature
+- **Tema** — Toggle gelap/terang monokrom
+- **Copy** — Salin isi pesan ke clipboard
+- **🔄 Retry** — Ulangi prompt sebelumnya
+
+---
+
+### 🌐 Web Search
+- **Groq**: Otomatis pakai model **Compound Beta** saat WEB aktif
+- **Gemini**: Aktifkan **Google Search Grounding** saat WEB aktif
+- Klik tombol **🌐 WEB** di header sebelum kirim pesan
+
+---
+
+### 🔑 API Keys
+- **Groq** — Gratis di [console.groq.com](https://console.groq.com/keys)
+- **Gemini** — Gratis di [aistudio.google.com](https://aistudio.google.com/app/apikey)`;
+}
+
+// ── AI API Calls ──────────────────────────────────────────────────────────────
+async function callGemini(messages) {
+  const key = state.apiKeys.gemini;
+  if (!key) throw new Error('Gemini API key belum diatur. Klik 🔑 KEY di header.');
+  const mdl = state.model.startsWith('gemini') ? state.model : 'gemini-2.0-flash';
+  const body = {
+    contents: messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })),
+    systemInstruction: { parts: [{ text: state.sysPrompt }] },
+    generationConfig: { temperature: state.temperature, maxOutputTokens: 8192 }
+  };
+  if (state.webOn) body.tools = [{ googleSearch: {} }];
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent?key=${key}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'Tidak ada respons dari Gemini.';
+}
+
+async function callGroq(messages) {
+  const key = state.apiKeys.groq;
+  if (!key) throw new Error('Groq API key belum diatur. Klik 🔑 KEY di header.');
+  const mdl = state.webOn ? 'compound-beta' : state.model;
+  const body = {
+    model: mdl,
+    messages: [{ role: 'system', content: state.sysPrompt }, ...messages.map(m => ({ role: m.role, content: m.content }))],
+    temperature: state.temperature,
+    max_tokens: 8192
+  };
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.choices?.[0]?.message?.content || 'Tidak ada respons dari Groq.';
+}
+
+// ── Chat Management ───────────────────────────────────────────────────────────
+function getChat(id) { return state.chats.find(c => c.id === (id || state.currentChatId)) || state.chats[0]; }
+
+function createNewChat() {
+  const c = { id: genId(), title: 'Chat Baru', messages: [], createdAt: nowTs() };
+  state.chats.unshift(c);
+  state.currentChatId = c.id;
+  save();
+  renderSidebar();
+  renderMessages();
+}
+
+function switchChat(id) {
+  state.currentChatId = id;
+  save();
+  renderSidebar();
+  renderMessages();
+  closeSearch();
+}
+
+function deleteChat(id) {
+  state.chats = state.chats.filter(c => c.id !== id);
+  if (!state.chats.length) {
+    const c = { id: genId(), title: 'Chat Baru', messages: [], createdAt: nowTs() };
+    state.chats = [c];
+  }
+  if (state.currentChatId === id) state.currentChatId = state.chats[0].id;
+  save();
+  renderSidebar();
+  renderMessages();
+}
+
+function clearChat() {
+  const chat = getChat();
+  if (chat) { chat.messages = []; chat.title = 'Chat Baru'; save(); renderMessages(); renderSidebar(); }
+}
+
+function addMessage(role, content, opts = {}) {
+  const chat = getChat();
+  const msg = { id: genId(), role, content, timestamp: nowTs(), ...opts };
+  chat.messages.push(msg);
+  if (chat.messages.filter(m => m.role === 'user').length === 1) {
+    chat.title = content.slice(0, 45) || 'Chat Baru';
+  }
+  save();
+  return msg;
+}
+
+// ── Send Message ──────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text || state.loading) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  updateCharCount();
+
+  // Add user message
+  const userMsg = addMessage('user', text);
+  renderMessage(userMsg);
+  hideWelcome();
+  scrollBottom();
+  setLoading(true);
+
+  try {
+    // Check special commands
+    const cmdResult = await runCommand(text);
+    if (cmdResult !== null) {
+      const aiMsg = addMessage('assistant', cmdResult, { special: true });
+      renderMessage(aiMsg, 'special');
+      setLoading(false);
+      scrollBottom();
+      updateStatusBar();
+      renderSidebar();
+      return;
+    }
+
+    // AI call
+    const chat = getChat();
+    const response = state.provider === 'gemini'
+      ? await callGemini(chat.messages.slice(-20))
+      : await callGroq(chat.messages.slice(-20));
+
+    const aiMsg = addMessage('assistant', response, { model: state.model, webSearch: state.webOn });
+    renderMessage(aiMsg, state.webOn ? 'web' : null);
+  } catch(e) {
+    const errMsg = addMessage('assistant', `❌ **Error:** ${e.message}\n\nPastikan:\n- API key sudah benar\n- Koneksi internet aktif\n- Model tersedia untuk API key Anda`, { error: true });
+    renderMessage(errMsg, 'err');
+  }
+
+  setLoading(false);
+  scrollBottom();
+  updateStatusBar();
+  renderSidebar();
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function renderMessages() {
+  const container = document.getElementById('messages');
+  container.innerHTML = '<div id="welcome"></div>';
+  const chat = getChat();
+  if (!chat?.messages.length) { renderWelcome(); updateStatusBar(); return; }
+  hideWelcome();
+  chat.messages.forEach(m => renderMessage(m, m.webSearch ? 'web' : m.error ? 'err' : m.special ? 'special' : null));
+  updateStatusBar();
+  setTimeout(scrollBottom, 50);
+}
+
+function renderMessage(msg, tag = null) {
+  const container = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = `msg-wrap ${msg.role}`;
+  wrap.id = `msg_${msg.id}`;
+
+  const isAI = msg.role === 'assistant';
+  const avatar = `<div class="msg-avatar ${isAI ? 'ai' : 'user'}">${isAI ? '◈' : 'U'}</div>`;
+
+  let tagHtml = '';
+  if (tag === 'web') tagHtml = '<div class="msg-tag web">🌐 WEB SEARCH AKTIF</div>';
+  else if (tag === 'err') tagHtml = '<div class="msg-tag err">⚠ ERROR</div>';
+  else if (tag === 'special') tagHtml = '<div class="msg-tag special">◈ PERINTAH DIEKSEKUSI</div>';
+
+  const contentHtml = isAI
+    ? `<div class="md">${parseMarkdown(msg.content)}</div>`
+    : `<div style="white-space:pre-wrap">${esc(msg.content)}</div>`;
+
+  const modelInfo = msg.model ? ` · ${msg.model.split('-').slice(0,3).join(' ')}` : '';
+  const footer = `<div class="msg-footer">
+    <span class="msg-meta">${fmtTime(msg.timestamp)}${modelInfo}</span>
+    <div class="msg-actions">
+      <button class="msg-act-btn" onclick="copyMsg('${msg.id}')" title="Salin">📋</button>
+      ${isAI ? `<button class="msg-act-btn" onclick="retryMsg('${msg.id}')" title="Kirim ulang">🔄</button>` : ''}
+    </div>
+  </div>`;
+
+  wrap.innerHTML = avatar + `<div class="msg-bubble">${tagHtml}${contentHtml}${footer}</div>`;
+  container.appendChild(wrap);
+}
+
+function renderSidebar() {
+  const list = document.getElementById('chat-list');
+  list.innerHTML = '';
+  state.chats.forEach(c => {
+    const div = document.createElement('div');
+    div.className = `chat-item${c.id === state.currentChatId ? ' active' : ''}`;
+    div.innerHTML = `<span class="chat-item-dot">◦</span><span class="chat-item-title">${esc(c.title || 'Chat Baru')}</span><button class="chat-item-del" onclick="event.stopPropagation();deleteChat('${c.id}')" title="Hapus">✕</button>`;
+    div.onclick = () => switchChat(c.id);
+    list.appendChild(div);
+  });
+}
+
+function renderWelcome() {
+  const el = document.getElementById('welcome');
+  if (!el) return;
+  const mdlName = PROVIDERS[state.provider]?.models.find(m => m.id === state.model)?.name || state.model;
+  el.innerHTML = `
+    <div class="welcome-logo">◈</div>
+    <div class="welcome-title">NEXUS AI</div>
+    <div class="welcome-sub">Asisten AI Serba Bisa · 30+ Fitur</div>
+    <div class="welcome-model">${PROVIDERS[state.provider].name} · ${mdlName}</div>
+    <div class="quick-grid">
+      ${[
+        ['🤖','Tanya AI','Ketik pesan biasa'],
+        ['📱','.tt [url]','Download TikTok No WM'],
+        ['🎵','.music [lagu]','Cari Lagu iTunes'],
+        ['🌤️','.weather [kota]','Cek Cuaca Real-time'],
+        ['🧮','.calc [rumus]','Kalkulator Matematika'],
+        ['🎬','.yt [query]','Cari Music Video'],
+        ['📤','.export','Export Chat ke .txt'],
+        ['❓','.help','Semua Perintah'],
+      ].map(([icon, cmd, desc]) => `
+        <div class="quick-card" onclick="quickAction('${cmd.replace(/'/g,'\\\'')}')" title="${esc(desc)}">
+          <div class="quick-card-cmd">${icon} ${esc(cmd)}</div>
+          <div class="quick-card-desc">${esc(desc)}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function hideWelcome() {
+  const el = document.getElementById('welcome');
+  if (el) el.innerHTML = '';
+}
+
+function updateStatusBar() {
+  const chat = getChat();
+  const hasKey = state.provider === 'gemini' ? !!state.apiKeys.gemini : !!state.apiKeys.groq;
+  const mdlName = PROVIDERS[state.provider]?.models.find(m => m.id === state.model)?.name || state.model;
+
+  document.getElementById('sb-api').classList.toggle('on', hasKey);
+  document.getElementById('sb-api-txt').textContent = `${state.provider.toUpperCase()}: ${hasKey ? 'OK' : 'No Key'}`;
+  document.getElementById('sb-web').classList.toggle('on', state.webOn);
+  document.getElementById('sb-model-txt').textContent = `Model: ${mdlName}`;
+  document.getElementById('sb-msgs-txt').textContent = `${chat?.messages.length || 0} pesan`;
+
+  // Header key button
+  const keyBtn = document.getElementById('key-btn');
+  const keyDot = document.getElementById('key-dot');
+  keyBtn.classList.toggle('ok', hasKey);
+  keyBtn.classList.toggle('err', !hasKey);
+  keyDot.classList.toggle('ok', hasKey);
+}
+
+// ── UI Actions ────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  state.sidebarOpen = !state.sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('closed', !state.sidebarOpen);
+  document.getElementById('main').classList.toggle('sidebar-closed', !state.sidebarOpen);
+  save();
+}
+
+function toggleWeb() {
+  state.webOn = !state.webOn;
+  document.getElementById('web-btn').classList.toggle('active', state.webOn);
+  document.getElementById('web-indicator').style.display = state.webOn ? 'inline' : 'none';
+  updateStatusBar();
+  save();
+  if (state.webOn) showToast('🌐 Web Search Aktif' + (state.provider === 'groq' ? ' (Compound Beta)' : ' (Gemini Grounding)'));
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.body.classList.toggle('light', state.theme === 'light');
+  document.getElementById('theme-icon').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  document.getElementById('theme-label').textContent = state.theme === 'dark' ? 'Mode Terang' : 'Mode Gelap';
+  save();
+}
+
+function toggleSearch() {
+  const bar = document.getElementById('search-bar');
+  const visible = bar.classList.contains('visible');
+  if (visible) { closeSearch(); } else { bar.classList.add('visible'); document.getElementById('search-input').focus(); }
+}
+
+function closeSearch() {
+  document.getElementById('search-bar').classList.remove('visible');
+  document.getElementById('search-input').value = '';
+  doSearch('');
+}
+
+function doSearch(q) {
+  const term = q.toLowerCase().trim();
+  const count = document.getElementById('search-count');
+  const msgs = document.querySelectorAll('.msg-wrap');
+  let found = 0;
+  msgs.forEach(el => {
+    if (!term) { el.style.display = ''; return; }
+    const text = el.querySelector('.msg-bubble')?.textContent?.toLowerCase() || '';
+    const match = text.includes(term);
+    el.style.display = match ? '' : 'none';
+    if (match) found++;
+  });
+  count.textContent = term ? `${found} hasil` : '';
+}
+
+function setLoading(on) {
+  state.loading = on;
+  document.getElementById('typing-indicator').classList.toggle('visible', on);
+  document.getElementById('typing-label').textContent = state.provider.toUpperCase() + ' PROCESSING...';
+  document.getElementById('send-btn').disabled = on || !document.getElementById('user-input').value.trim();
+  if (on) scrollBottom();
+}
+
+function scrollBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function onInputChange() {
+  const inp = document.getElementById('user-input');
+  const len = inp.value.length;
+  document.getElementById('char-count').textContent = len + ' karakter';
+  document.getElementById('send-btn').disabled = state.loading || len === 0;
+  // Auto-resize
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 220) + 'px';
+}
+
+function onInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function updateCharCount() {
+  document.getElementById('char-count').textContent = '0 karakter';
+  document.getElementById('send-btn').disabled = true;
+}
+
+function quickAction(cmd) {
+  const input = document.getElementById('user-input');
+  const skip = ['Tanya AI', 'Aktifkan WEB →'];
+  if (cmd === 'Tanya AI' || cmd === 'Aktifkan WEB →') { input.focus(); return; }
+  input.value = cmd.includes('[') ? cmd.split('[')[0].trimEnd() + ' ' : cmd;
+  input.focus();
+  onInputChange();
+  // Position cursor at end
+  const len = input.value.length;
+  input.setSelectionRange(len, len);
+}
+
+function copyMsg(id) {
+  const msg = getChat()?.messages.find(m => m.id === id);
+  if (!msg) return;
+  navigator.clipboard.writeText(msg.content)
+    .then(() => showToast('✓ Disalin ke clipboard'))
+    .catch(() => showToast('❌ Gagal menyalin'));
+}
+
+function retryMsg(id) {
+  const chat = getChat();
+  const idx = chat?.messages.findIndex(m => m.id === id);
+  if (idx > 0) {
+    const prev = chat.messages[idx - 1];
+    if (prev?.role === 'user') {
+      document.getElementById('user-input').value = prev.content;
+      onInputChange();
+      document.getElementById('user-input').focus();
+      showToast('📋 Prompt disalin ke input');
+    }
+  }
+}
+
+function exportChat() {
+  const result = cmdExport();
+  if (result.startsWith('❌')) showToast(result);
+  else showToast('✅ Chat berhasil diekspor!');
+}
+
+function onProviderChange(p) {
+  state.provider = p;
+  const models = PROVIDERS[p].models;
+  state.model = models[0].id;
+  renderModelSelect();
+  updateStatusBar();
+  save();
+}
+
+function onModelChange(m) {
+  state.model = m;
+  updateStatusBar();
+  save();
+}
+
+function renderModelSelect() {
+  const sel = document.getElementById('model-select');
+  sel.innerHTML = '';
+  (PROVIDERS[state.provider]?.models || []).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name;
+    opt.selected = m.id === state.model;
+    sel.appendChild(opt);
+  });
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openModal(name) {
+  document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden'));
+  const m = document.getElementById(`modal-${name}`);
+  if (!m) return;
+  m.classList.remove('hidden');
+
+  if (name === 'api') {
+    document.getElementById('key-gemini').value = state.apiKeys.gemini || '';
+    document.getElementById('key-groq').value = state.apiKeys.groq || '';
+  }
+  if (name === 'settings') {
+    document.getElementById('sys-prompt').value = state.sysPrompt;
+    const tr = document.getElementById('temp-range');
+    tr.value = state.temperature;
+    updateTempLabel(state.temperature);
+    document.getElementById('info-provider').textContent = PROVIDERS[state.provider].name;
+    document.getElementById('info-model').textContent = state.model;
+  }
+  if (name === 'help') {
+    document.getElementById('help-content').innerHTML = `<div class="md">${parseMarkdown(getHelpText())}</div>`;
+  }
+}
+
+function closeModal(name) {
+  document.getElementById(`modal-${name}`)?.classList.add('hidden');
+}
+
+function handleOverlayClick(e, name) {
+  if (e.target === e.currentTarget) closeModal(name);
+}
+
+function saveApiKeys() {
+  state.apiKeys.gemini = document.getElementById('key-gemini').value.trim();
+  state.apiKeys.groq = document.getElementById('key-groq').value.trim();
+  save();
+  updateStatusBar();
+  closeModal('api');
+  showToast('✅ API Key berhasil disimpan!');
+}
+
+function saveSettings() {
+  state.sysPrompt = document.getElementById('sys-prompt').value.trim() || state.sysPrompt;
+  state.temperature = parseFloat(document.getElementById('temp-range').value);
+  save();
+  closeModal('settings');
+  showToast('✅ Pengaturan disimpan!');
+}
+
+function updateTempLabel(val) {
+  document.getElementById('temp-val').textContent = parseFloat(val).toFixed(1);
+}
+
+function toggleShow(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  load();
+
+  // Apply theme
+  document.body.classList.toggle('light', state.theme === 'light');
+  document.getElementById('theme-icon').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  document.getElementById('theme-label').textContent = state.theme === 'dark' ? 'Mode Terang' : 'Mode Gelap';
+
+  // Apply sidebar state
+  if (!state.sidebarOpen) {
+    document.getElementById('sidebar').classList.add('closed');
+    document.getElementById('main').classList.add('sidebar-closed');
+  }
+
+  // Apply web state
+  document.getElementById('web-btn').classList.toggle('active', state.webOn);
+  document.getElementById('web-indicator').style.display = state.webOn ? 'inline' : 'none';
+
+  // Set provider/model
+  document.getElementById('provider-select').value = state.provider;
+  renderModelSelect();
+
+  // Ensure model matches provider
+  const validModels = PROVIDERS[state.provider]?.models.map(m => m.id) || [];
+  if (!validModels.includes(state.model)) {
+    state.model = validModels[0] || state.model;
+  }
+  document.getElementById('model-select').value = state.model;
+
+  renderSidebar();
+  renderMessages();
+  updateStatusBar();
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); toggleSearch(); }
+    if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden')); closeSearch(); }
+  });
+
+  // Btn new chat
+  document.getElementById('btn-new-chat').onclick = createNewChat;
+
+  // Input focus
+  document.getElementById('user-input').focus();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
